@@ -1,1 +1,1 @@
-# ERC20-Wallet
+# ERC20 Wallet
