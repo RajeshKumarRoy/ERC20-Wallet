@@ -2,11 +2,16 @@
 
 pragma solidity 0.8.14;
 
-import "./iWallet.sol";
-import "./IERC20.sol";
-
-contract Wallet is iWallet
+interface iToken
 {
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+}
+
+contract Wallet
+{
+    event TokenExtracted(address indexed contractAddress, address indexed from, address indexed to, uint256 amount, uint256 timestamp);
+
     address private _owner;
 
     constructor()
@@ -20,20 +25,20 @@ contract Wallet is iWallet
         _;
     }
 
-    function extractToken(address contractAddress, address account, uint256 amount) external returns (bool)
+    function extractToken(address contractAddress, address account, uint256 amount) onlyOwner external returns (bool)
     {
-        require(address(this).balance > 0, "Zero Balance!");
-        require(address(this).balance >= amount, "Low Balance!");
-        IERC20(contractAddress).transfer(account, amount);
+        require(iToken(contractAddress).balanceOf(address(this)) > 0, "Zero Balance!");
+        require(iToken(contractAddress).balanceOf(address(this)) >= amount, "Low Balance!");
+        iToken(contractAddress).transfer(account, amount);
         emit TokenExtracted(contractAddress, address(this), account, amount, block.timestamp);
         return true;
     }
 
-    function extractAllToken(address contractAddress, address account) external returns (bool)
+    function extractAllToken(address contractAddress, address account) onlyOwner external returns (bool)
     {
-        require(address(this).balance > 0, "Zero Balance!");
-        IERC20(contractAddress).transfer(account, IERC20(contractAddress).balanceOf(address(this)));
-        emit TokenExtracted(contractAddress, address(this), account, IERC20(contractAddress).balanceOf(address(this)), block.timestamp);
+        require(iToken(contractAddress).balanceOf(address(this)) > 0, "Zero Balance!");
+        iToken(contractAddress).transfer(account, iToken(contractAddress).balanceOf(address(this)));
+        emit TokenExtracted(contractAddress, address(this), account, iToken(contractAddress).balanceOf(address(this)), block.timestamp);
         return true;
     }
 }
